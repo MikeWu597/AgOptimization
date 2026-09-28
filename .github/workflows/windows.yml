@@ -1,0 +1,43 @@
+name: Test and package Windows GUI
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**.py'
+      - 'requirements*.txt'
+      - 'scripts/**'
+      - '.github/workflows/windows.yml'
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Install dependencies
+        run: python -m pip install -r requirements-build.txt
+      - name: Test parser and deletion
+        run: python -m unittest discover -v
+      - name: Test GUI with synthetic data
+        run: python -m tests.gui_smoke
+      - name: Build Windows executable
+        run: python -m PyInstaller --noconfirm --clean --windowed --onedir --name MinecraftRegionCleaner --collect-all lz4 --collect-all xxhash main.py
+      - name: Verify packaged GUI starts
+        shell: pwsh
+        run: |
+          $app = Start-Process -FilePath dist/MinecraftRegionCleaner/MinecraftRegionCleaner.exe -ArgumentList '--smoke-test' -Wait -PassThru
+          if ($app.ExitCode -ne 0) { throw 'Packaged application startup failed' }
+      - name: Include instructions
+        run: Copy-Item README.md dist/MinecraftRegionCleaner/README.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MinecraftRegionCleaner-windows-x64
+          path: dist/MinecraftRegionCleaner/
+          if-no-files-found: error

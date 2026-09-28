@@ -1,0 +1,14 @@
+.venv/
+.venv-win/
+__pycache__/
+*.py[cod]
+.DS_Store
+build/
+dist/
+*.spec
+world/
+world_nether/
+world_the_end/
+*.mca
+*.mcc
+*.log
